@@ -67,7 +67,7 @@ var hasFunction = function() {
     new AWS.Lambda().getFunction({FunctionName:state.config.name}, (err, func) => {
       if (err) {
         if (err.code == 'ResourceNotFoundException') {
-          resolve(false)
+          resolve(true)
         } else {
           reject(err.toString())
         }
@@ -106,83 +106,62 @@ var zipDirectory = function() {
 
 // Update function
 
-var updateLambda = function() {
+var updateFunction = function(createFlag) {
   return new Promise((resolve, reject) => {
-    console.log(state.lambda)
-    resolve()
-  })
-}
-
-// Create function
-
-var createLambda = function() {
-  return new Promise((resolve, reject) => {
-
-
-    new AWS.IAM().getUser({}, (err, data) => {
-
+    fs.readFile(state.zipFile, (err, zipData) => {
       if (err) {
         reject(err.toString())
         return
       }
 
-      fs.readFile(state.zipFile, (err, zipData) => {
+      let params = {
+        FunctionName: state.config.name,
+        Publish: true
+      }
+
+      if (createFlag) {
+        params.Handler = `${path.basename(state.config.main, '.js')}.${state.handler}`
+        params.Description = ''
+        params.Runtime = 'nodejs6.10'
+        params.Role = process.env.AWS_LAMBDA_ARN
+        params.Code = {
+          ZipFile: zipData
+        }
+      } else {
+        params.ZipFile = zipData
+      }
+
+      new AWS.Lambda()[createFlag?  'createFunction' : 'updateFunctionCode'](params, (err, data) => {
         if (err) {
           reject(err.toString())
           return
         }
 
-        let params = {
-          FunctionName: state.config.name,
-          Handler: `${path.basename(state.config.main, '.js')}.${state.handler}`,
-          Description: '',
-          Runtime:'nodejs',
-          Role:,
-          Code: {
-            ZipFile: zipData
-          }
-        }
-
-        new AWS.Lambda().createFunction(params, (err, data) => {
-          if (err) {
-            reject(err.toString())
-            return
-          }
-
-          console.log(data)
-          resolve()
-        })
+        resolve()
       })
-
     })
-
   })
 }
-// Upload the code
-// Delete the zipfile
 
 // Promise chain to execute
 
 pkgInfo()
 .then(zipDirectory)
 .then(hasFunction)
-.then((bool) => {
-  // Update or create the lambda function
-  return (bool)? updateLambda() : createLambda()
-})
+.then(updateFunction)
 .catch((err) => {
   console.error(err)
 })
 .then(() => {
 
   return new Promise((resolve, reject) => {
-    // fs.unlink(state.zipFile, (err) => {
-    //   if (err) {
-    //     reject(err.toString())
-    //   }
+    fs.unlink(state.zipFile, (err) => {
+      if (err) {
+        reject(err.toString())
+      }
 
       resolve()
-    // });
+    });
   })
 })
 .catch((err) => {
