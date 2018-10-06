@@ -39,7 +39,7 @@ let state = new State()
 var pkgInfo = function() {
   return new Promise((resolve, reject) => {
 
-    state.packageDir = path.dirname(path.dirname(path.dirname(__filename)))
+    state.packageDir = path.dirname(path.dirname(path.dirname(path.dirname(__filename))))
 
     fs.readFile(path.join(state.packageDir, 'package.json'), 'utf8', (err, data) => {
       if (err) {
@@ -110,7 +110,7 @@ var updateFunction = function(createFlag) {
   return new Promise((resolve, reject) => {
 
     let params = {
-      Bucket: 'big-ol-bucket',
+      Bucket: process.env.AWS_BUCKET_NAME,
       Key: path.basename(state.zipFile),
       Body: fs.createReadStream(state.zipFile)
     }
@@ -133,12 +133,12 @@ var updateFunction = function(createFlag) {
         params.Runtime = 'nodejs6.10'
         params.Role = process.env.AWS_LAMBDA_ARN
         params.Code = {
-          S3Bucket: 'big-ol-bucket',
+          S3Bucket: process.env.AWS_BUCKET_NAME,
           S3Key: path.basename(state.zipFile),
           S3ObjectVersion: data.VersionId
         }
       } else {
-        params.S3Bucket = 'big-ol-bucket',
+        params.S3Bucket = process.env.AWS_BUCKET_NAME,
         params.S3Key = path.basename(state.zipFile),
         params.S3ObjectVersion = data.VersionId
       }
