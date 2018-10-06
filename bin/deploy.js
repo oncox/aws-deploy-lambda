@@ -75,7 +75,7 @@ var hasFunction = function() {
       }
 
       state.lambda = func.Configuration
-      resolve(true)
+      resolve(false)
     })
   })
 }
@@ -108,7 +108,15 @@ var zipDirectory = function() {
 
 var updateFunction = function(createFlag) {
   return new Promise((resolve, reject) => {
-    fs.readFile(state.zipFile, (err, zipData) => {
+
+    let params = {
+      Bucket: 'big-ol-bucket',
+      Key: path.basename(state.zipFile),
+      Body: fs.createReadStream(state.zipFile)
+    }
+
+    new AWS.S3().putObject(params, (err, data) => {
+
       if (err) {
         reject(err.toString())
         return
@@ -125,10 +133,14 @@ var updateFunction = function(createFlag) {
         params.Runtime = 'nodejs6.10'
         params.Role = process.env.AWS_LAMBDA_ARN
         params.Code = {
-          ZipFile: zipData
+          S3Bucket: 'big-ol-bucket',
+          S3Key: path.basename(state.zipFile),
+          S3ObjectVersion: data.VersionId
         }
       } else {
-        params.ZipFile = zipData
+        params.S3Bucket = 'big-ol-bucket',
+        params.S3Key = path.basename(state.zipFile),
+        params.S3ObjectVersion = data.VersionId
       }
 
       new AWS.Lambda()[createFlag?  'createFunction' : 'updateFunctionCode'](params, (err, data) => {
