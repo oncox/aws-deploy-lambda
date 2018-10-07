@@ -7,7 +7,6 @@ const path = require('path')
 const archiver = require('archiver')
 const AWS = require('aws-sdk')
 
-process.env.AWS_SDK_LOAD_CONFIG=1
 
 // State to maintain any global variables we need throughout the promise chain
 
@@ -157,6 +156,9 @@ var updateFunction = function(createFlag) {
 
 // Promise chain to execute
 
+const awsSdkLoadConfig = process.env.AWS_SDK_LOAD_CONFIG
+process.env.AWS_SDK_LOAD_CONFIG =1
+
 pkgInfo()
 .then(zipDirectory)
 .then(hasFunction)
@@ -165,6 +167,8 @@ pkgInfo()
   console.error(err)
 })
 .then(() => {
+
+  process.env.AWS_SDK_LOAD_CONFIG = awsSdkLoadConfig
 
   return new Promise((resolve, reject) => {
     fs.unlink(state.zipFile, (err) => {

@@ -10,7 +10,7 @@
     "deploy-lambda": "./bin/deploy.js"
   },
   "keywords": [],
-  "author": "",
+  "author": "Owen Cox",
   "license": "ISC",
   "dependencies": {
     "archiver": "^3.0.0",
